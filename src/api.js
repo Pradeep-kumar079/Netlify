@@ -1,12 +1,10 @@
 import axios from "axios";
 
-// ✅ Backend URL (use your actual deployed Render backend URL)
-const API = axios.create({
-  baseURL: "https://alumni-backend-bz8e.onrender.com/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
-  withCredentials: true, // ✅ allows cookies/sessions if used
+const backendUrl = "https://render-esxj.onrender.com";
+
+const api = axios.create({
+  baseURL: `${backendUrl}/api`,
+  withCredentials: true,
 });
 
-export default API;
+export default api;
