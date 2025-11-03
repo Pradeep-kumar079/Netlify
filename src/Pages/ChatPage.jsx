@@ -1,4 +1,3 @@
-// src/Pages/ChatPage.jsx
 import React, { useEffect, useState } from "react";
 import Navbar from "../Components/Navbar";
 import ChatLayout from "../Components/ChatLayout";
@@ -7,9 +6,8 @@ import axios from "axios";
 const ChatPage = () => {
   const [user, setUser] = useState(null);
 
-  // ✅ Automatically use local backend in development and Render backend in production
- const backend = process.env.REACT_APP_BACKEND_URL;
-
+  // ✅ Use Render backend (your actual URL)
+  const backend = "https://render-esxj.onrender.com";
 
   const fetchCurrentUser = async () => {
     try {

@@ -1,14 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { io } from "socket.io-client";
 import axios from "axios";
 import "./Chat.css";
 import { Edit, Trash2, X } from "lucide-react";
+import { socket } from "../socket"; // ✅ Import shared socket instance
 
 const BACKEND_URL = "https://render-esxj.onrender.com";
-const socket = io(BACKEND_URL, {
-  transports: ["websocket", "polling"],
-  reconnection: true,
-});
 
 const Chat = ({ currentUserId, otherUserId }) => {
   const [messages, setMessages] = useState([]);
@@ -19,44 +15,45 @@ const Chat = ({ currentUserId, otherUserId }) => {
   const [editMode, setEditMode] = useState(false);
   const [editText, setEditText] = useState("");
 
-  // ✅ Fetch chat + user data
+  // ✅ Fetch chat and receiver info
   useEffect(() => {
     socket.emit("user-online", currentUserId);
 
-    const fetchData = async () => {
+    const fetchChatData = async () => {
       try {
         const token = localStorage.getItem("token");
+        if (!token) return;
 
+        // ✅ Fetch receiver details
         const receiverRes = await axios.get(`${BACKEND_URL}/api/chat/receiver/${otherUserId}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (receiverRes.data.success) setReceiver(receiverRes.data.user);
 
-        const chatRes = await axios.get(
-          `${BACKEND_URL}/api/chat/${currentUserId}/${otherUserId}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (chatRes.data.success) {
-          setMessages(chatRes.data.chats);
-        }
+        // ✅ Fetch chat history
+        const chatRes = await axios.get(`${BACKEND_URL}/api/chat/${currentUserId}/${otherUserId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (chatRes.data.success) setMessages(chatRes.data.chats);
       } catch (err) {
-        console.error("Error fetching chat:", err);
+        console.error("❌ Error fetching chat:", err);
       }
     };
 
-    fetchData();
+    fetchChatData();
 
+    // ✅ Socket listeners
     socket.on("receive-message", (data) => {
       setMessages((prev) => [...prev, data.chat]);
     });
 
-    socket.on("message-edited", ({ chat }) =>
-      setMessages((prev) => prev.map((m) => (m._id === chat._id ? chat : m)))
-    );
+    socket.on("message-edited", ({ chat }) => {
+      setMessages((prev) => prev.map((m) => (m._id === chat._id ? chat : m)));
+    });
 
-    socket.on("message-deleted", ({ chatId }) =>
-      setMessages((prev) => prev.filter((m) => m._id !== chatId))
-    );
+    socket.on("message-deleted", ({ chatId }) => {
+      setMessages((prev) => prev.filter((m) => m._id !== chatId));
+    });
 
     socket.on("userStatusUpdate", ({ userId, isOnline }) => {
       if (userId === otherUserId) setIsOnline(isOnline);
@@ -70,17 +67,18 @@ const Chat = ({ currentUserId, otherUserId }) => {
     };
   }, [currentUserId, otherUserId]);
 
-  // ✅ Send message
+  // ✅ Send Message
   const sendMessage = async () => {
     if (!input.trim()) return;
-    const tempId = Date.now().toString();
 
+    const tempId = Date.now().toString();
     const msgData = {
       fromUserId: currentUserId,
       toUserId: otherUserId,
       message: input,
     };
 
+    // Temporary show message before backend confirm
     setMessages((prev) => [...prev, { ...msgData, _id: tempId, sender: currentUserId }]);
     setInput("");
 
@@ -90,11 +88,11 @@ const Chat = ({ currentUserId, otherUserId }) => {
       });
       socket.emit("send-message", res.data.chat);
     } catch (err) {
-      console.error("Send message error:", err);
+      console.error("❌ Send message error:", err);
     }
   };
 
-  // ✅ Start edit
+  // ✅ Start edit mode
   const handleEditStart = () => {
     const msg = messages.find((m) => m._id === selectedMsgId);
     if (msg) {
@@ -117,11 +115,11 @@ const Chat = ({ currentUserId, otherUserId }) => {
       setSelectedMsgId(null);
       setEditText("");
     } catch (err) {
-      console.error("Edit message error:", err);
+      console.error("❌ Edit message error:", err);
     }
   };
 
-  // ✅ Delete
+  // ✅ Delete message
   const handleDelete = async () => {
     try {
       await axios.delete(`${BACKEND_URL}/api/chat/delete/${selectedMsgId}/${currentUserId}`, {
@@ -131,7 +129,7 @@ const Chat = ({ currentUserId, otherUserId }) => {
       socket.emit("delete-message", { chatId: selectedMsgId, userId: currentUserId });
       setSelectedMsgId(null);
     } catch (err) {
-      console.error("Delete error:", err);
+      console.error("❌ Delete message error:", err);
     }
   };
 
