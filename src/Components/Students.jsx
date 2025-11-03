@@ -8,7 +8,7 @@ const Students = () => {
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const base_url = "http://localhost:5000";
+  const base_url = "https://render-esxj.onrender.com";
 
   useEffect(() => {
     const fetchStudentBatches = async () => {

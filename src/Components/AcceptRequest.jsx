@@ -9,7 +9,7 @@ const AcceptRequest = ({ refreshStudents }) => {
   useEffect(() => {
     const acceptConnection = async () => {
       try {
-        const res = await axios.get(`http://localhost:5000/api/student/accept-request/${token}`);
+        const res = await axios.get(`https://render-esxj.onrender.com/api/student/accept-request/${token}`);
         if (res.data.success) {
           refreshStudents?.();
           navigate("/student/accept-success");
